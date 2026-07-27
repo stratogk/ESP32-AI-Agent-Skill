@@ -29,7 +29,7 @@ Cross-platform device/module reference for Raspberry Pi and ESP32 GPIO configura
   - [SX1276 / RFM95W](#sx1276--rfm95w-lora-radio)
   - [MCP2515](#mcp2515-can-bus-controller)
   - [ENC28J60](#enc28j60-spi-ethernet-controller)
-  - [Rs485](#RS485)
+  - [Rs485](RS485 (Differential Serial Bus))
 - [Category 6: Motor Control](#category-6-motor-control)
   - [PCA9685](#pca9685-16-channel-pwmservo-driver)
   - [L298N](#l298n-dual-h-bridge-motor-driver)
