@@ -607,7 +607,7 @@ Cross-platform device/module reference for Raspberry Pi and ESP32 GPIO configura
 
 ---
 
-# RS485 (Differential Serial Bus)
+### RS485 (Differential Serial Bus)
 
 | Field | Value |
 |---|---|
@@ -637,6 +637,7 @@ Cross-platform device/module reference for Raspberry Pi and ESP32 GPIO configura
 - Only one transmitter should be active at a time; if two devices assert DE simultaneously (bus contention), data collides and corrupts — software must enforce turn-taking (this is what Modbus/DMX addressing schemes exist for)
 - Termination resistors go only at the two physical ends of the bus, not at every device — over-terminating loads the bus and weakens the signal
 
+---
 
 ## Category 6: Motor Control
 
