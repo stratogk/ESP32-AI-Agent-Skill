@@ -5,13 +5,13 @@ A Claude Code plugin for ESP32 embedded systems development. Provides expert-lev
 ## Installation
 
 ```bash
-claude /install-plugin https://github.com/ezrover/ESP32-AI-Agent-Skill
+claude /install-plugin https://github.com/stratogk/ESP32-AI-Agent-Skill
 ```
 
 Or install from a local clone:
 
 ```bash
-git clone https://github.com/ezrover/ESP32-AI-Agent-Skill.git
+git clone https://github.com/stratogk/ESP32-AI-Agent-Skill.git
 claude /install-plugin ./ESP32-AI-Agent-Skill
 ```
 
