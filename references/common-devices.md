@@ -30,6 +30,7 @@ Cross-platform device/module reference for Raspberry Pi and ESP32 GPIO configura
   - [MCP2515](#mcp2515-can-bus-controller)
   - [ENC28J60](#enc28j60-spi-ethernet-controller)
   - [Rs485](#RS485-Differential-Serial-Bus)
+  - [nanoBCU](#NanoBCU-KNX-TP1-Bus-Coupling-Unit)
 - [Category 6: Motor Control](#category-6-motor-control)
   - [PCA9685](#pca9685-16-channel-pwmservo-driver)
   - [L298N](#l298n-dual-h-bridge-motor-driver)
@@ -636,6 +637,49 @@ Cross-platform device/module reference for Raspberry Pi and ESP32 GPIO configura
 - Bus needs a common ground reference between all devices, not just A/B — floating/isolated grounds over long runs are a common source of intermittent errors
 - Only one transmitter should be active at a time; if two devices assert DE simultaneously (bus contention), data collides and corrupts — software must enforce turn-taking (this is what Modbus/DMX addressing schemes exist for)
 - Termination resistors go only at the two physical ends of the bus, not at every device — over-terminating loads the bus and weakens the signal
+
+---
+### NanoBCU (KNX-TP1 Bus Coupling Unit)
+
+| Field | Value |
+|---|---|
+| Interface | UART (telegrams sent/received as serial frames, protocol close to TPUart) |
+| Required Pins | UART TX, UART RX, GND, 3.3V out (from BCU), SAVE (power-fail warning) |
+| I2C Address | N/A |
+| Voltage | KNX bus side: 3.3V–21V configurable via R4 (default outputs 3.3V, 5V, 12V, or 21V rails); UART/logic side fixed at 3.3V |
+| Pull-ups | N/A |
+| UART Settings | 19200 bps, 8E1 (8 data bits, even parity, 1 stop bit); 38400 bps selectable from hardware revision V02.10 onward |
+
+**Core IC:** OnSemi NCN5130 (also compatible with NCN5121, NCN5120)
+
+**Board Notes:**
+- Extremely small: 18 x 17 x 8 mm, ~4g
+- Mounts via a straight or angled 1x7 pin header, 2.54mm pitch
+- Draws power from the KNX-TP1 bus itself and regulates it out to the host device — max 100mA @ 3.3V + 100mA @ 5V simultaneously (dual-rail output only available with NCN5130); max current drawn from the bus itself is 40mA (NCN5130) or 20mA (NCN512x)
+- Output ripple ~50–100mV depending on voltage/load
+
+**SAVE Pin:**
+- Signals an impending KNX bus power failure a few tens of milliseconds before the onboard 3.3V rail collapses (buffered by the board's capacitor)
+- Typical warning window: 50–200ms, depending on the host device's current draw — gives firmware time to persist state before power is lost
+- Can bounce/chatter on trigger — debounce in firmware
+
+**Host/MCU Notes:**
+- No SPI or I2C involved — this is a pure UART bus coupler; any MCU with a spare UART works
+- For ESP32/ARM targets, the maintainers point to the [OpenKNX stack](https://github.com/OpenKNX/knx) as the recommended software integration
+- Solutions also exist for smaller 8-bit controllers, .NET, and Java
+- Since the UART protocol is largely compatible with TPUart, existing TPUart-based software can often be reused with limited changes
+
+**Gotchas:**
+- This is not a radio or SPI peripheral like nRF24L01 — it's a KNX-TP1 bus coupling unit; don't confuse UART TX/RX here with SPI MOSI/MISO
+- The bus-side voltage (3.3–21V) is set by swapping resistor R4 on the board itself — it's a hardware, not software, configuration
+- Very sensitive to correct pinout since the header is unlabeled/compact at 18x17mm — check the schematic before wiring
+- KiCAD source files are not published; only the schematic PDF and a 3D step model are available
+- Hardware design is released under CC-BY-NC-SA — noncommercial use only without separate licensing
+
+**Docs:**
+- [Schematic (V02.10)](https://github.com/Ing-Dom/NanoBCU/blob/main/doc/NanoBCU_V02.10.sch.pdf)
+- [3D model (V02.10)](https://github.com/Ing-Dom/NanoBCU/blob/main/doc/NanoBCU_V02.10.step)
+- [Repository](https://github.com/Ing-Dom/NanoBCU)
 
 ---
 
