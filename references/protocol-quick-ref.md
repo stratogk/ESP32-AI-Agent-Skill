@@ -50,7 +50,7 @@
   - [External ADC Options](#external-adc-options)
   - [Input Protection](#input-protection)
   - [Platform Notes](#platform-notes)
-
+- [Rs485 (Modbus, DMX)](#RS485)
 ---
 
 ## I2C (Inter-Integrated Circuit)
