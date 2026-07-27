@@ -51,6 +51,7 @@
   - [Input Protection](#input-protection)
   - [Platform Notes](#platform-notes)
 - [Rs485 (Modbus, DMX)](#RS485)
+- [NanoBCU](#NanoBCU-KNX-TP1-Bus-Coupling-Unit)
 ---
 
 ## I2C (Inter-Integrated Circuit)
@@ -553,3 +554,80 @@ Note: Requires a transceiver chip (GPIO/UART TTL cannot drive RS485 directly)
 - Needs an external transceiver (e.g. MAX3485) + 1 GPIO for DE/RE (auto-direction modules exist that free up the GPIO)
 - Libraries: `ModbusMaster`, `esp-modbus`, [`esp_dmx`](https://github.com/someweisguy/esp_dmx) (DMX-512A / RDM over RS485, uses any hardware UART + TX/RX/enable pins)
 
+---
+
+# NanoBCU (KNX-TP1 Bus Coupling Unit)
+
+**Overview**
+- Very small Bus Coupling Unit (BCU) for the KNX-TP1 building automation bus
+- Built around the OnSemi NCN51xx KNX transceiver ICs (NCN5130, NCN5121, NCN5120)
+- Board size: 18 x 17 x 8 mm, ~4g — designed to be embedded directly on a host device's PCB or connected via header
+- Sends and receives KNX telegrams over UART — no SPI or I2C involved
+- Also powers the host device by regulating voltage taken from the KNX bus itself
+- UART protocol is largely compatible with TPUart, so existing TPUart-based software can often be reused
+
+**Signal Lines**
+
+| Signal | Description |
+|---|---|
+| TX | UART transmit — telegrams sent to the bus |
+| RX | UART receive — telegrams received from the bus |
+| GND | Common ground |
+| 3.3V (out) | Regulated supply from the BCU to power the host MCU |
+| SAVE | Warns of impending bus power loss before the 3.3V rail collapses |
+
+Note: This is a UART bus coupler, not a radio or SPI peripheral — don't confuse TX/RX here with SPI MOSI/MISO
+
+**Core IC / Voltage Options**
+
+| IC | Notes |
+|---|---|
+| NCN5130 | Standard choice, supports dual-rail output (3.3V + 5V simultaneously), max 40mA drawn from bus |
+| NCN5121 / NCN5120 | Also supported, single-rail output only, max 20mA drawn from bus |
+
+Bus-side output voltage (3.3V, 5V, 12V, or 21V, or anywhere 1.2V–21V) is set by swapping resistor R4 on the board — a hardware, not software, configuration.
+
+**Speed and Protocol**
+
+| Setting | Value |
+|---|---|
+| Baud rate | 19200 bps (default); 38400 bps selectable from hardware revision V02.10 onward |
+| Frame format | 8E1 (8 data bits, even parity, 1 stop bit) |
+| Logic level | 3.3V |
+
+**Power**
+- Max combined output: 100mA @ 3.3V + 100mA @ 5V (dual rail only available with NCN5130)
+- Max current drawn from the KNX bus: 40mA (NCN5130) / 20mA (NCN512x)
+- Output ripple: ~50–100mV, depending on voltage and load
+
+**SAVE Pin (power-fail warning)**
+- Signals a KNX bus power failure a few tens of milliseconds before the onboard 3.3V rail actually collapses (the board's capacitor buffers the gap)
+- Typical warning window: 50–200ms depending on host current draw — enough time for firmware to persist state
+- Pin can bounce/chatter on trigger — debounce in firmware
+
+**Mounting**
+- Straight or angled 1x7 pin header, 2.54mm pitch
+- KiCAD footprints for various mounting options are available in the [OpenKNX-KiCad-Lib](https://github.com/OpenKNX/OpenKNX-KiCad-Lib)
+
+**Platform Notes**
+
+*ESP32 / ARM:*
+- Any hardware UART works
+- Recommended software stack: [OpenKNX](https://github.com/OpenKNX/knx)
+
+*8-bit microcontrollers, .NET, Java:*
+- Existing community libraries available; check the KNX User Forum development thread for current options
+
+*General:*
+- Since the protocol closely follows TPUart, a NanoBCU can often stand in for a TPUart-based interface within certain limits
+
+**Gotchas**
+- Board is unlabeled and compact — check the schematic before wiring, don't rely on pin position alone
+- KiCAD source files are not published, only the schematic PDF and a 3D step model
+- Hardware design is released under CC-BY-NC-SA — noncommercial use only without a separate license
+- SAVE pin bounce needs debouncing; treating the first edge as final can trigger false power-loss handling
+
+**Docs**
+- [Schematic (V02.10)](https://github.com/Ing-Dom/NanoBCU/blob/main/doc/NanoBCU_V02.10.sch.pdf)
+- [3D model (V02.10)](https://github.com/Ing-Dom/NanoBCU/blob/main/doc/NanoBCU_V02.10.step)
+- [Repository](https://github.com/Ing-Dom/NanoBCU)
