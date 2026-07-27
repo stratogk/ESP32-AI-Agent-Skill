@@ -483,3 +483,73 @@ Other formats exist (7E1, 8E1, etc.) but 8N1 covers 95%+ of use cases.
 - Non-linear at extremes — calibration improves accuracy
 
 ---
+
+# RS485
+
+## Overview
+- Differential two-wire bus (noise immune)
+- Multi-drop: up to 32 devices on one bus (more with higher-input-impedance transceivers or repeaters)
+- Typically half-duplex over 2 wires — only one device transmits at a time
+- No built-in message framing/addressing like CAN — handled by a higher-level protocol (e.g. Modbus RTU, DMX-512) or a custom addressing scheme
+- Requires direction control (DE/RE pins) to switch between transmit and receive
+
+## Signal Lines
+
+| Signal | Description |
+|---|---|
+| A | Non-inverting line |
+| B | Inverting line |
+| GND | Common ground (important over long distances) |
+
+Note: Requires a transceiver chip (GPIO/UART TTL cannot drive RS485 directly)
+
+## Common Transceivers
+
+| Chip | Voltage | Notes |
+|---|---|---|
+| MAX485 | 5V | Classic, widely used (common Arduino modules) |
+| SN75176 | 5V | Older, industrial standard |
+| MAX3485 | 3.3V | Good for ESP32/STM32 |
+| SP3485 | 3.3V | Low power |
+
+## Speed and Distance
+
+| Speed | Max Distance | Use Case |
+|---|---|---|
+| 9.6 kbps | up to 1200m | Long distance, industrial |
+| 19.2 kbps | ~1000m | Typical Modbus RTU |
+| 115.2 kbps | ~100m | General purpose |
+| 35 Mbps | short range | High speed, short cable runs |
+
+## Termination
+- 120Ω resistor at each end of the bus (two total) to prevent signal reflections — can be skipped for short distances
+- Twisted-pair cable recommended to minimize EMI, especially in noisy environments
+
+## Communication Modes
+- **Simplex** — one device always transmits, the other always receives; no direction switching needed
+- **Half-duplex** — two wires (A/B), devices alternate between TX and RX using the DE/RE pins; most common mode
+- **Full-duplex** — two twisted pairs and two transceiver modules per device, send/receive simultaneously; more wiring and cost
+
+## Module Pinout (MAX485 module)
+- VCC, GND → power
+- DI (Data In) → connect to MCU TX
+- RO (Receiver Out) → connect to MCU RX
+- DE/RE → tie together, drive from a digital pin (HIGH = transmit, LOW = receive); can be hardwired if the device only ever transmits or only receives
+
+## Platform Notes
+
+### Arduino
+- No built-in RS485 controller — uses the standard UART (Serial) plus a MAX485 module
+- One digital pin controls DE/RE to switch direction in code
+- For multiple devices, assign each an address/ID in software so only the intended recipient responds
+
+### Raspberry Pi
+- No hardware RS485 controller
+- USB-to-RS485 adapter, or UART pins + MAX485 module with a GPIO for DE/RE control
+- Software: e.g. `pymodbus` for Modbus RTU
+
+### ESP32
+- Uses one of the hardware UART peripherals
+- Needs an external transceiver (e.g. MAX3485) + 1 GPIO for DE/RE (auto-direction modules exist that free up the GPIO)
+- Libraries: `ModbusMaster`, `esp-modbus`, [`esp_dmx`](https://github.com/someweisguy/esp_dmx) (DMX-512A / RDM over RS485, uses any hardware UART + TX/RX/enable pins)
+
