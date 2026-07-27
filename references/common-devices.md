@@ -29,6 +29,7 @@ Cross-platform device/module reference for Raspberry Pi and ESP32 GPIO configura
   - [SX1276 / RFM95W](#sx1276--rfm95w-lora-radio)
   - [MCP2515](#mcp2515-can-bus-controller)
   - [ENC28J60](#enc28j60-spi-ethernet-controller)
+  - [Rs485](#RS485)
 - [Category 6: Motor Control](#category-6-motor-control)
   - [PCA9685](#pca9685-16-channel-pwmservo-driver)
   - [L298N](#l298n-dual-h-bridge-motor-driver)
@@ -605,6 +606,37 @@ Cross-platform device/module reference for Raspberry Pi and ESP32 GPIO configura
 - Consider W5500 (100 Mbps, hardware TCP/IP stack) as modern alternative
 
 ---
+
+# RS485 (Differential Serial Bus)
+
+| Field | Value |
+|---|---|
+| Interface | UART + transceiver chip (e.g. MAX485) |
+| Required Pins | TX (→ DI), RX (→ RO), one GPIO for DE/RE (direction control) |
+| I2C Address | N/A |
+| Voltage | Transceiver logic side matches MCU (5V or 3.3V module variants exist); bus side (A/B) is a differential signal, not a fixed logic level |
+| Pull-ups | Not required for logic; 120Ω termination resistors at each end of the bus, plus optional ~560Ω bias resistors on A/B to hold idle state |
+
+**RPi Notes:**
+- No hardware RS485/UART-to-differential conversion — use the Pi's UART TX/RX (GPIO14/15) or a USB-to-RS485 adapter
+- DE/RE tied together, driven from any GPIO (e.g. GPIO17)
+- If using the onboard UART, disable the Linux serial console on that port first
+- Software libraries expect standard serial (`pyserial`), plus something like `pymodbus` if speaking Modbus RTU
+
+**ESP32 Notes:**
+- Use any hardware UART (UART0/1/2) via the GPIO matrix — not limited to fixed pins
+- DE/RE on any output GPIO; some modules combine DE/RE into one pin, others (like the `esp_dmx` library setup) use a single "enable" pin
+- Avoid strapping pins (GPIO0, 2, 12, 15) for DE/RE
+- Libraries: `ModbusMaster`, `esp-modbus`, [`esp_dmx`](https://github.com/someweisguy/esp_dmx) for DMX-512A/RDM
+
+**Gotchas:**
+- DE and RE are usually two pins on the module but almost always wired together and driven as one signal — HIGH = transmit, LOW = receive
+- Forgetting to set DE/RE LOW after transmitting means the module never releases the bus, and nothing else can talk
+- A and B labeling isn't standardized across all vendors — some swap it or label it D+/D−; if communication fails, try swapping the two wires before assuming a hardware fault
+- Bus needs a common ground reference between all devices, not just A/B — floating/isolated grounds over long runs are a common source of intermittent errors
+- Only one transmitter should be active at a time; if two devices assert DE simultaneously (bus contention), data collides and corrupts — software must enforce turn-taking (this is what Modbus/DMX addressing schemes exist for)
+- Termination resistors go only at the two physical ends of the bus, not at every device — over-terminating loads the bus and weakens the signal
+
 
 ## Category 6: Motor Control
 
